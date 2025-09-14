@@ -1,0 +1,181 @@
+<!-- Start of Namaa Live Chat Widget -->
+<script type="text/javascript">
+(function() {
+    var liveChatConfig = {
+        apiKey: 'livechat_68b94b8c869bdd98f805d6a4_1757791001127',
+        companyId: '68b94b8c869bdd98f805d6a4',
+        baseUrl: 'https://windy-condor-75-qynk8t2k6gb7.deno.dev',
+        color: '#e83e8c',
+        position: 'bottom-right',
+        welcomeMessage: 'مرحباً! كيف يمكننا مساعدتك اليوم؟',
+        offlineMessage: 'نحن غير متواجدين حالياً، اترك رسالتك وسنعود إليك قريباً.',
+        companyName: 'التحصيل الوافي'
+    };
+
+    var styles = `
+        .livechat-widget-namaa { position: fixed; z-index: 999999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
+        .livechat-button-namaa { width: 60px; height: 60px; border-radius: 50%; background-color: ${liveChatConfig.color}; border: none; cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        .livechat-button-namaa:hover { transform: scale(1.1); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .livechat-button-namaa svg { width: 24px; height: 24px; fill: white; }
+        .livechat-window-namaa { display: none; width: 350px; height: 500px; background: white; border-radius: 12px; box-shadow: 0 5px 40px rgba(0,0,0,0.16); flex-direction: column; overflow: hidden; }
+        .livechat-header-namaa { background: linear-gradient(135deg, ${liveChatConfig.color}, ${liveChatConfig.color}dd); color: white; padding: 16px; display: flex; align-items: center; justify-content: space-between; }
+        .livechat-close-namaa { background: none; border: none; color: white; cursor: pointer; font-size: 20px; }
+        .livechat-body-namaa { flex: 1; display: flex; flex-direction: column; }
+        .livechat-messages-namaa { flex: 1; padding: 16px; overflow-y: auto; max-height: 300px; display: flex; flex-direction: column; }
+        .livechat-message-namaa { margin-bottom: 12px; padding: 8px 12px; border-radius: 18px; max-width: 80%; word-wrap: break-word; }
+        .livechat-message-namaa.visitor { background-color: #f0f0f0; align-self: flex-end; margin-left: auto; text-align: right; }
+        .livechat-message-namaa.agent { background-color: ${liveChatConfig.color}20; align-self: flex-start; }
+        .livechat-form-namaa { padding: 16px; border-top: 1px solid #eee; }
+        .livechat-input-namaa { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 20px; margin-bottom: 8px; font-size: 14px; direction: rtl; text-align: right; }
+        .livechat-submit-namaa { width: 100%; padding: 10px; background-color: ${liveChatConfig.color}; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
+        .livechat-widget-namaa.${liveChatConfig.position} { ${liveChatConfig.position === 'bottom-right' ? 'right: 20px;' : 'left: 20px;'} bottom: 20px; }
+    `;
+
+    var styleSheet = document.createElement('style');
+    styleSheet.textContent = styles;
+    document.head.appendChild(styleSheet);
+
+    var widgetContainer = document.createElement('div');
+    widgetContainer.className = 'livechat-widget-namaa ' + liveChatConfig.position;
+
+    var chatButton = document.createElement('button');
+    chatButton.className = 'livechat-button-namaa';
+    chatButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>';
+
+    var chatWindow = document.createElement('div');
+    chatWindow.className = 'livechat-window-namaa';
+    chatWindow.innerHTML = `
+        <div class="livechat-header-namaa">
+            <div><div style="font-weight: 600;">${liveChatConfig.companyName}</div><div style="font-size: 12px; opacity: 0.9;">الدردشة المباشرة</div></div>
+            <button class="livechat-close-namaa">&times;</button>
+        </div>
+        <div class="livechat-body-namaa">
+            <div class="livechat-messages-namaa" id="livechat-messages-namaa"></div>
+            <div class="livechat-form-namaa" id="livechat-form-namaa"></div>
+        </div>
+    `;
+
+    widgetContainer.appendChild(chatButton);
+    widgetContainer.appendChild(chatWindow);
+    document.body.appendChild(widgetContainer);
+
+    var messagesContainer = document.getElementById('livechat-messages-namaa');
+    var chatFormContainer = document.getElementById('livechat-form-namaa');
+    var closeButton = chatWindow.querySelector('.livechat-close-namaa');
+
+    window.namaaLiveChat = {
+        isOpen: false,
+        sessionId: null,
+        visitorInfo: null,
+        pollInterval: null,
+        lastTimestamp: null,
+
+        toggleChat: function() {
+            this.isOpen = !this.isOpen;
+            chatWindow.style.display = this.isOpen ? 'flex' : 'none';
+            if (this.isOpen && !this.sessionId) this.showStartForm();
+            if (this.isOpen) this.startPolling(); else this.stopPolling();
+        },
+
+        showStartForm: function() {
+            messagesContainer.innerHTML = '<div class="livechat-message-namaa agent">' + liveChatConfig.welcomeMessage + '</div>';
+            chatFormContainer.innerHTML = `
+                <input type="text" class="livechat-input-namaa" id="visitor-name-namaa" placeholder="اسمك الكامل" required>
+                <input type="tel" class="livechat-input-namaa" id="visitor-phone-namaa" placeholder="رقم الهاتف" required>
+                <input type="email" class="livechat-input-namaa" id="visitor-email-namaa" placeholder="البريد الإلكتروني (اختياري)">
+                <button class="livechat-submit-namaa">بدء المحادثة</button>
+            `;
+            chatFormContainer.querySelector('button').onclick = this.startChat.bind(this);
+        },
+
+        startChat: async function() {
+            var name = document.getElementById('visitor-name-namaa').value.trim();
+            var phone = document.getElementById('visitor-phone-namaa').value.trim();
+            if (!name || !phone) { alert('يرجى إدخال الاسم ورقم الهاتف'); return; }
+            this.visitorInfo = { name, phone, email: document.getElementById('visitor-email-namaa').value.trim() };
+            
+            try {
+                const res = await fetch(`${liveChatConfig.baseUrl}/functions/startChat`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ api_key: liveChatConfig.apiKey, company_id: liveChatConfig.companyId, visitor_name: name, visitor_phone: phone, visitor_email: this.visitorInfo.email })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Failed to start chat');
+                this.sessionId = data.session_id;
+                this.showChatInterface();
+                this.startPolling();
+            } catch (e) { alert('حدث خطأ: ' + e.message); }
+        },
+
+        showChatInterface: function() {
+            chatFormContainer.innerHTML = `
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" class="livechat-input-namaa" id="message-input-namaa" placeholder="اكتب رسالتك..." style="flex: 1; margin-bottom: 0;">
+                    <button class="livechat-submit-namaa" style="width: auto; padding: 10px 16px;">إرسال</button>
+                </div>
+            `;
+            var input = document.getElementById('message-input-namaa');
+            var sendBtn = chatFormContainer.querySelector('button');
+            sendBtn.onclick = this.sendMessage.bind(this);
+            input.onkeypress = (e) => { if (e.key === 'Enter') this.sendMessage(); };
+        },
+
+        sendMessage: async function() {
+            var input = document.getElementById('message-input-namaa');
+            var message = input.value.trim();
+            if (!message || !this.sessionId) return;
+            input.value = '';
+            this.addMessageToUI('visitor', message);
+            
+            try {
+                await fetch(`${liveChatConfig.baseUrl}/functions/sendChatMessage`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ session_id: this.sessionId, message: message, sender_type: 'visitor' })
+                });
+            } catch (e) { console.error('Send error:', e); }
+        },
+
+        addMessageToUI: function(type, message, senderName) {
+            var msgDiv = document.createElement('div');
+            msgDiv.className = 'livechat-message-namaa ' + type;
+            var content = senderName ? `<strong>${senderName}:</strong> ${message}` : message;
+            msgDiv.innerHTML = content;
+            messagesContainer.appendChild(msgDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        },
+
+        startPolling: function() {
+            if (this.pollInterval || !this.sessionId) return;
+            this.pollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${liveChatConfig.baseUrl}/functions/pollChatMessages?session_id=${this.sessionId}&last_timestamp=${this.lastTimestamp || ''}`);
+                    const data = await res.json();
+                    if (data.success && data.messages) {
+                        data.messages.forEach(msg => {
+                            if (msg.sender_type === 'agent') {
+                                this.addMessageToUI('agent', msg.message_content, msg.sender_name);
+                            }
+                        });
+                        if (data.latest_timestamp) this.lastTimestamp = data.latest_timestamp;
+                    }
+                } catch (e) { console.error('Polling error:', e); }
+            }, 3000);
+        },
+
+        stopPolling: function() {
+            if (this.pollInterval) {
+                clearInterval(this.pollInterval);
+                this.pollInterval = null;
+            }
+        }
+    };
+
+    chatButton.addEventListener('click', () => window.namaaLiveChat.toggleChat());
+    closeButton.addEventListener('click', () => window.namaaLiveChat.toggleChat());
+
+    if (!window.namaaLiveChat.sessionId) window.namaaLiveChat.showStartForm();
+})();
+</script>
+<!-- End of Namaa Live Chat Widget -->
