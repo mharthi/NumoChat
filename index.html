@@ -3,13 +3,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     (function() {
         var liveChatConfig = {
-            apiKey: 'livechat_68b94b8c869bdd98f805d6a4_1757962447381',
+            apiKey: 'livechat_68b94b8c869bdd98f805d6a4_1757963107045',
             companyId: '68b94b8c869bdd98f805d6a4',
-            baseUrl: 'https://windy-condor-75-r387a57v7rq0.deno.dev',
-            color: '#6c757d',
+            baseUrl: 'https://windy-condor-75-cvkps1hr7m2s.deno.dev',
+            color: '#fd7e14',
             position: 'bottom-right',
-            welcomeMessage: 'مرحباً ألف؟',
-            offlineMessage: 'حنا طالعين الحين، اترك لنا رسالة.',
+            welcomeMessage: 'مرحباً! كيف يمكننا مساعدتك اليوم؟',
+            offlineMessage: 'نحن غير متواجدين حالياً، اترك رسالتك وسنعود إليك قريباً.',
             companyName: 'التحصيل الوافي'
         };
 
@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .livechat-message-namaa { margin-bottom: 12px; padding: 8px 12px; border-radius: 18px; max-width: 80%; word-wrap: break-word; }
             .livechat-message-namaa.visitor { background-color: #f0f0f0; align-self: flex-end; margin-left: auto; text-align: right; }
             .livechat-message-namaa.agent { background-color: ${liveChatConfig.color}20; align-self: flex-start; }
+            .livechat-message-namaa.error { background-color: #fef2f2; border: 1px solid #fecaca; color: #dc2626; align-self: flex-start; max-width: 100%; border-radius: 8px; font-size: 14px; line-height: 1.5; padding: 10px 15px; }
             .livechat-form-namaa { padding: 16px; border-top: 1px solid #eee; }
             .livechat-input-namaa { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 20px; margin-bottom: 8px; font-size: 14px; direction: rtl; text-align: right; }
             .livechat-submit-namaa { width: 100%; padding: 10px; background-color: ${liveChatConfig.color}; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
@@ -89,24 +90,63 @@ document.addEventListener('DOMContentLoaded', function() {
                 chatFormContainer.querySelector('button').onclick = this.startChat.bind(this);
             },
 
+            showError: function(errorMessage) {
+                var errorDiv = document.createElement('div');
+                errorDiv.className = 'livechat-message-namaa error';
+                errorDiv.innerHTML = '<strong>خطأ تقني:</strong><br>' + errorMessage + '<br><br><small>يرجى المحاولة مرة أخرى، وإن استمر الخطأ تواصل مع الدعم التقني.</small>';
+                messagesContainer.appendChild(errorDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            },
+
             startChat: async function() {
                 var name = document.getElementById('visitor-name-namaa').value.trim();
                 var phone = document.getElementById('visitor-phone-namaa').value.trim();
-                if (!name || !phone) { alert('يرجى إدخال الاسم ورقم الهاتف'); return; }
-                this.visitorInfo = { name, phone, email: document.getElementById('visitor-email-namaa').value.trim() };
+                if (!name || !phone) { 
+                    alert('يرجى إدخال الاسم ورقم الهاتف'); 
+                    return; 
+                }
+                this.visitorInfo = { 
+                    name, 
+                    phone, 
+                    email: document.getElementById('visitor-email-namaa').value.trim() 
+                };
                 
                 try {
                     const res = await fetch(`${liveChatConfig.baseUrl}/functions/startChat`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ api_key: liveChatConfig.apiKey, company_id: liveChatConfig.companyId, visitor_name: name, visitor_phone: phone, visitor_email: this.visitorInfo.email })
+                        body: JSON.stringify({ 
+                            api_key: liveChatConfig.apiKey, 
+                            company_id: liveChatConfig.companyId, 
+                            visitor_name: name, 
+                            visitor_phone: phone, 
+                            visitor_email: this.visitorInfo.email 
+                        })
                     });
+                    
                     const data = await res.json();
-                    if (!res.ok || !data.success) throw new Error(data.error || 'Failed to start chat');
+                    
+                    if (!res.ok) {
+                        // إذا كان هناك خطأ 500 أو أي خطأ آخر، اعرض التفاصيل
+                        var errorMessage = 'خطأ غير معروف';
+                        if (data.error) errorMessage = data.error;
+                        if (data.details) errorMessage += '<br><strong>التفاصيل:</strong> ' + data.details;
+                        if (data.stack) errorMessage += '<br><strong>المكان:</strong> <pre style="font-size:10px;background:#f5f5f5;padding:5px;margin-top:5px;">' + data.stack.substring(0, Math.min(300, data.stack.length)) + (data.stack.length > 300 ? '...' : '') + '</pre>';
+                        
+                        throw new Error(errorMessage);
+                    }
+                    
+                    if (!data.success) {
+                        throw new Error(data.error || 'Failed to start chat');
+                    }
+                    
                     this.sessionId = data.session_id;
                     this.showChatInterface();
                     this.startPolling();
-                } catch (e) { alert('حدث خطأ: ' + e.message); }
+                } catch (e) {
+                    console.error('Start chat error:', e);
+                    this.showError(e.message);
+                }
             },
 
             showChatInterface: function() {
