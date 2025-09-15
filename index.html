@@ -3,13 +3,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     (function() {
         var liveChatConfig = {
-            apiKey: 'livechat_68b94b8c869bdd98f805d6a4_1757963107045',
+            appId: '68b93da76a0ee4f52ceac7a9',
+            apiKey: 'livechat_68b94b8c869bdd98f805d6a4_1757963534170',
             companyId: '68b94b8c869bdd98f805d6a4',
-            baseUrl: 'https://windy-condor-75-cvkps1hr7m2s.deno.dev',
-            color: '#fd7e14',
+            baseUrl: 'https://windy-condor-75-pb7sxdw5435t.deno.dev',
+            color: '#6f42c1',
             position: 'bottom-right',
-            welcomeMessage: 'مرحباً! كيف يمكننا مساعدتك اليوم؟',
-            offlineMessage: 'نحن غير متواجدين حالياً، اترك رسالتك وسنعود إليك قريباً.',
+            welcomeMessage: 'مرحباً ألف',
+            offlineMessage: 'حنا راجعين بس اترك رسالة',
             companyName: 'التحصيل الوافي'
         };
 
@@ -26,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .livechat-message-namaa { margin-bottom: 12px; padding: 8px 12px; border-radius: 18px; max-width: 80%; word-wrap: break-word; }
             .livechat-message-namaa.visitor { background-color: #f0f0f0; align-self: flex-end; margin-left: auto; text-align: right; }
             .livechat-message-namaa.agent { background-color: ${liveChatConfig.color}20; align-self: flex-start; }
-            .livechat-message-namaa.error { background-color: #fef2f2; border: 1px solid #fecaca; color: #dc2626; align-self: flex-start; max-width: 100%; border-radius: 8px; font-size: 14px; line-height: 1.5; padding: 10px 15px; }
+            .livechat-message-namaa.error { background-color: #fef2f2; border: 1px solid #fecaca; color: #dc2626; align-self: flex-start; max-width: 100%; }
             .livechat-form-namaa { padding: 16px; border-top: 1px solid #eee; }
             .livechat-input-namaa { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 20px; margin-bottom: 8px; font-size: 14px; direction: rtl; text-align: right; }
             .livechat-submit-namaa { width: 100%; padding: 10px; background-color: ${liveChatConfig.color}; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
@@ -72,6 +73,13 @@ document.addEventListener('DOMContentLoaded', function() {
             pollInterval: null,
             lastTimestamp: null,
 
+            getHeaders: function() {
+                return {
+                    'Content-Type': 'application/json',
+                    'Base44-App-Id': liveChatConfig.appId
+                };
+            },
+
             toggleChat: function() {
                 this.isOpen = !this.isOpen;
                 chatWindow.style.display = this.isOpen ? 'flex' : 'none';
@@ -114,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     const res = await fetch(`${liveChatConfig.baseUrl}/functions/startChat`, {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
+                        headers: this.getHeaders(),
                         body: JSON.stringify({ 
                             api_key: liveChatConfig.apiKey, 
                             company_id: liveChatConfig.companyId, 
@@ -127,11 +135,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const data = await res.json();
                     
                     if (!res.ok) {
-                        // إذا كان هناك خطأ 500 أو أي خطأ آخر، اعرض التفاصيل
                         var errorMessage = 'خطأ غير معروف';
                         if (data.error) errorMessage = data.error;
                         if (data.details) errorMessage += '<br><strong>التفاصيل:</strong> ' + data.details;
-                        if (data.stack) errorMessage += '<br><strong>المكان:</strong> <pre style="font-size:10px;background:#f5f5f5;padding:5px;margin-top:5px;">' + data.stack.substring(0, Math.min(300, data.stack.length)) + (data.stack.length > 300 ? '...' : '') + '</pre>';
+                        if (data.stack) errorMessage += '<br><strong>المكان:</strong> <pre style="font-size:10px;background:#f5f5f5;padding:5px;margin-top:5px;">' + data.stack.substring(0, 300) + '...</pre>';
                         
                         throw new Error(errorMessage);
                     }
@@ -172,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     await fetch(`${liveChatConfig.baseUrl}/functions/sendChatMessage`, {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
+                        headers: this.getHeaders(),
                         body: JSON.stringify({ session_id: this.sessionId, message: message, sender_type: 'visitor' })
                     });
                 } catch (e) { console.error('Send error:', e); }
@@ -191,7 +198,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (this.pollInterval || !this.sessionId) return;
                 this.pollInterval = setInterval(async () => {
                     try {
-                        const res = await fetch(`${liveChatConfig.baseUrl}/functions/pollChatMessages?session_id=${this.sessionId}&last_timestamp=${this.lastTimestamp || ''}`);
+                        const res = await fetch(`${liveChatConfig.baseUrl}/functions/pollChatMessages?session_id=${this.sessionId}&last_timestamp=${this.lastTimestamp || ''}`, {
+                            headers: this.getHeaders()
+                        });
                         const data = await res.json();
                         if (data.success && data.messages) {
                             data.messages.forEach(msg => {
